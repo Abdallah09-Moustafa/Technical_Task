@@ -1,0 +1,22 @@
+/* Website ROP Styles */
+
+.rop-product-card .card,
+.realtime-product-card .card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rop-product-card .card:hover,
+.realtime-product-card .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+
+.btn-update-qty {
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-update-qty:hover {
+    background-color: #0d6efd;
+    color: #fff;
+}

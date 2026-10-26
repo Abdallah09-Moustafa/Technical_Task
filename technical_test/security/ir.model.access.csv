@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_update_product_qty_wizard_manager,update.product.qty.wizard.manager,model_update_product_qty_wizard,stock.group_stock_manager,1,1,1,1

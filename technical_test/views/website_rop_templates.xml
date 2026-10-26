@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <data>
+        <!-- Layout / Menu Link in Website Header / Shop if desired -->
+
+        <!-- Template: ROP Low-Stock View (/shop/rop) -->
+        <template id="website_rop_view_template" name="ROP Products View">
+            <t t-call="website.layout">
+                <div id="wrap" class="oe_structure oe_empty">
+                    <div class="container py-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h1 class="h2 text-danger fw-bold">
+                                    <i class="fa fa-exclamation-triangle me-2"></i>ROP Products View
+                                </h1>
+                                <p class="text-muted">Displaying all products under Re-Order Point measure (Quantity &lt; 5 units)</p>
+                            </div>
+                            <span class="badge bg-danger fs-6 py-2 px-3">
+                                <t t-esc="len(products)"/> Products Alerted
+                            </span>
+                        </div>
+
+                        <div t-if="not products" class="alert alert-success text-center py-5">
+                            <h4><i class="fa fa-check-circle me-2"></i>All Products Well Stocked!</h4>
+                            <p class="mb-0">There are currently no products with quantity below 5 units.</p>
+                        </div>
+
+                        <div t-if="products" class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4" id="rop-products-grid">
+                            <t t-foreach="products" t-as="product">
+                                <div class="col rop-product-card" t-att-data-product-id="product.id">
+                                    <div class="card h-100 shadow-sm border-danger">
+                                        <div class="position-relative">
+                                            <img t-attf-src="/web/image/product.template/#{product.id}/image_512"
+                                                 class="card-img-top p-3"
+                                                 t-att-alt="product.name"
+                                                 style="height: 220px; object-fit: contain;"/>
+                                            <span class="position-absolute top-0 end-0 badge bg-danger m-2">
+                                                Qty: <span class="product-qty-display"><t t-esc="product.qty_available"/></span>
+                                            </span>
+                                        </div>
+
+                                        <div class="text-center p-2 border-top">
+                                            <!-- Button under image as required by Task 2 -->
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-primary btn-update-qty w-100 fw-bold"
+                                                    t-att-data-product-tmpl-id="product.id"
+                                                    t-att-data-product-id="product.product_variant_id.id if product.product_variant_id else ''"
+                                                    t-att-data-product-name="product.name"
+                                                    t-att-data-current-qty="str(product.qty_available)">
+                                                <i class="fa fa-edit me-1"></i> Update Product quantity
+                                            </button>
+                                        </div>
+
+                                        <div class="card-body d-flex flex-column pt-2">
+                                            <h5 class="card-title text-truncate" t-att-title="product.name">
+                                                <t t-esc="product.name"/>
+                                            </h5>
+                                            <div class="mt-auto">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="fw-bold text-primary">
+                                                        <t t-esc="product.list_price" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/>
+                                                    </span>
+                                                    <span t-if="product.has_rop" class="badge bg-secondary">
+                                                        ROP: <t t-esc="product.rop_count"/>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                        <nav t-if="has_previous or has_next" class="d-flex justify-content-between mt-4" aria-label="ROP product pages">
+                            <a t-if="has_previous" t-attf-href="?page=#{page - 1}&amp;limit=#{limit}" class="btn btn-outline-primary">Previous</a>
+                            <span t-else=""/>
+                            <a t-if="has_next" t-attf-href="?page=#{page + 1}&amp;limit=#{limit}" class="btn btn-outline-primary">Next</a>
+                        </nav>
+                    </div>
+
+                    <!-- Modal Popup for Updating Product Quantity (Task 2) -->
+                    <div class="modal fade" id="updateQtyModal" tabindex="-1" aria-labelledby="updateQtyModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title" id="updateQtyModalLabel">
+                                        <i class="fa fa-cubes me-2"></i>Update Product Quantity
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="updateQtyForm">
+                                        <input type="hidden" id="modalProductTmplId" name="product_tmpl_id"/>
+                                        <input type="hidden" id="modalProductId" name="product_id"/>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Product Name:</label>
+                                            <p id="modalProductName" class="text-muted mb-0"></p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Current Quantity on Hand:</label>
+                                            <p id="modalCurrentQty" class="badge bg-secondary fs-6 mb-0"></p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="modalNewQty" class="form-label fw-bold">New Quantity on Hand (Integer):</label>
+                                            <input type="number" step="1" min="0" class="form-control form-control-lg" id="modalNewQty" name="new_qty" required="1"/>
+                                        </div>
+                                        <div id="modalAlert" class="alert d-none"></div>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-primary" id="btnSubmitUpdateQty">
+                                        <i class="fa fa-check me-1"></i>Apply &amp; Notify
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </t>
+        </template>
+
+        <!-- Template: Real-time ROP View (/shop/realtime-rop) -->
+        <template id="website_realtime_rop_template" name="Real-Time ROP View">
+            <t t-call="website.layout">
+                <div id="wrap" class="oe_structure oe_empty">
+                    <div class="container py-4" id="realtime-rop-container">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h1 class="h2 text-success fw-bold">
+                                    <i class="fa fa-bolt me-2"></i>Real-time ROP View
+                                </h1>
+                                <p class="text-muted">Live real-time feed of products with stock quantity &gt; 5 units (Auto-refreshes seamlessly)</p>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>
+                                <span class="badge bg-success fs-6 py-2 px-3" id="realtime-count-badge">
+                                    <span id="realtime-products-count"><t t-esc="len(products)"/></span> Products In Stock (&gt; 5)
+                                </span>
+                            </div>
+                        </div>
+
+                        <div id="realtime-empty-alert" t-attf-class="alert alert-warning text-center py-5 #{'d-none' if products else ''}">
+                            <h4><i class="fa fa-info-circle me-2"></i>No Products Exceeding ROP</h4>
+                            <p class="mb-0">There are currently no products with stock quantity greater than 5 units.</p>
+                        </div>
+
+                        <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4" id="realtime-products-grid">
+                            <t t-foreach="products" t-as="product">
+                                <div class="col realtime-product-card" t-att-data-product-id="product.id">
+                                    <div class="card h-100 shadow-sm border-success">
+                                        <div class="position-relative">
+                                            <img t-attf-src="/web/image/product.template/#{product.id}/image_512"
+                                                 class="card-img-top p-3"
+                                                 t-att-alt="product.name"
+                                                 style="height: 220px; object-fit: contain;"/>
+                                            <span class="position-absolute top-0 end-0 badge bg-success m-2">
+                                                Qty: <span class="product-qty-val"><t t-esc="product.qty_available"/></span>
+                                            </span>
+                                        </div>
+                                        <div class="card-body d-flex flex-column">
+                                            <h5 class="card-title text-truncate" t-att-title="product.name">
+                                                <t t-esc="product.name"/>
+                                            </h5>
+                                            <div class="mt-auto d-flex justify-content-between align-items-center">
+                                                <span class="fw-bold text-success fs-5">
+                                                    <t t-esc="product.list_price" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/>
+                                                </span>
+                                                <span class="badge bg-light text-dark border">
+                                                    Code: <t t-esc="product.default_code or 'N/A'"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                        <nav t-if="has_previous or has_next" class="d-flex justify-content-between mt-4" aria-label="Real-time product pages">
+                            <a t-if="has_previous" t-attf-href="?page=#{page - 1}&amp;limit=#{limit}" class="btn btn-outline-success">Previous</a>
+                            <span t-else=""/>
+                            <a t-if="has_next" t-attf-href="?page=#{page + 1}&amp;limit=#{limit}" class="btn btn-outline-success">Next</a>
+                        </nav>
+
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <!-- Website Menus -->
+        <record id="menu_website_rop" model="website.menu">
+            <field name="name">ROP Products</field>
+            <field name="url">/shop/rop</field>
+            <field name="parent_id" ref="website.main_menu"/>
+            <field name="sequence" type="int">55</field>
+        </record>
+
+        <record id="menu_website_realtime_rop" model="website.menu">
+            <field name="name">Real-time ROP</field>
+            <field name="url">/shop/realtime-rop</field>
+            <field name="parent_id" ref="website.main_menu"/>
+            <field name="sequence" type="int">56</field>
+        </record>
+
+    </data>
+</odoo>

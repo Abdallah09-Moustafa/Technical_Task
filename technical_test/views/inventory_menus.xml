@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <data>
+
+        <!-- Action: ROP Products (< 5 quantity or has ROP) -->
+        <record id="action_rop_products" model="ir.actions.act_window">
+            <field name="name">ROP Products</field>
+            <field name="res_model">product.template</field>
+            <field name="view_mode">tree,kanban,form</field>
+            <field name="domain">[('qty_available', '&lt;', 5)]</field>
+            <field name="context">{'default_has_rop': True}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No products below Re-Order Point measure (&lt; 5 units).
+                </p>
+            </field>
+        </record>
+
+        <!-- Action: Products > ROP (> 5 quantity) -->
+        <record id="action_products_greater_rop" model="ir.actions.act_window">
+            <field name="name">Products > ROP</field>
+            <field name="res_model">product.template</field>
+            <field name="view_mode">tree,kanban,form</field>
+            <field name="domain">[('qty_available', '&gt;', 5)]</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No products with stock quantity greater than 5 units.
+                </p>
+            </field>
+        </record>
+
+        <!-- ROP Menu after Products (sequence 5) in Inventory -->
+        <menuitem id="menu_stock_rop_root"
+                  name="ROP"
+                  parent="stock.menu_stock_root"
+                  sequence="5"/>
+
+        <!-- Submenus -->
+        <menuitem id="menu_stock_rop_products"
+                  name="Products &lt; ROP"
+                  parent="menu_stock_rop_root"
+                  action="action_rop_products"
+                  sequence="1"/>
+
+        <menuitem id="menu_stock_products_greater_rop"
+                  name="Products &gt; ROP"
+                  parent="menu_stock_rop_root"
+                  action="action_products_greater_rop"
+                  sequence="2"/>
+
+    </data>
+</odoo>
